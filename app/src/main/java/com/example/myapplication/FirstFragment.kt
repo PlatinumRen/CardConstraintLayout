@@ -38,7 +38,7 @@ class FirstFragment : Fragment() {
                 launch {
                     loadViewModel.pictures.collect {
                         binding.pictureDisplay.apply {
-                            updateItem(it.toArrayList())
+                            updateItem(it)
                         }
                     }
                 }
@@ -47,13 +47,20 @@ class FirstFragment : Fragment() {
                         Log.d("RRR", "pictureDisplay state: $it")
 
                         when (it) {
+                            CardState.Idle -> {
+                                // Noop.
+                            }
                             is CardState.Forward -> {
                                 binding.pictureStagger.addPicture(it.bitmap)
                             }
                             is CardState.Backward -> {
                                 binding.pictureStagger.removePicture(it.bitmap)
                             }
-                            else -> {
+                            is CardState.ShowComment -> {
+                                loadViewModel
+                                binding.pictureDisplay.showComment(it.position)
+                            }
+                            CardState.Like -> {
                                 // Noop.
                             }
                         }
