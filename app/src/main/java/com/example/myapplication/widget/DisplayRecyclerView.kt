@@ -2,7 +2,6 @@ package com.example.myapplication.widget
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -96,25 +95,21 @@ class DisplayRecyclerView : RecyclerView,
         )
         set.applyTo(parent as ConstraintLayout)
         smoothScrollToPosition(newPosition)
-        requestLayout()
     }
 
     inner class DisplayItemAdapter : Adapter<ViewHolder>() {
-
-        private var parentHeight: Int = -1
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             return LayoutInflater.from(parent.context)
                 .inflate(R.layout.display_recycle_view_item, parent, false).apply {
                     this.layoutParams.width = 900
-                    parentHeight = parent.height
                     if (viewType == 0) {
                         lastLeftChild = this
-                        this.layoutParams.height = parentHeight
+                        this.layoutParams.height = parent.height
                         (this.layoutParams as MarginLayoutParams).topMargin = 0
                     } else {
-                        this.layoutParams.height = parentHeight / 3 * 2
-                        (this.layoutParams as MarginLayoutParams).topMargin = parentHeight / 6
+                        this.layoutParams.height = parent.height / 3 * 2
+                        (this.layoutParams as MarginLayoutParams).topMargin = parent.height / 6
                     }
                 }.let {
                     DisplayItemHolder(it)
@@ -141,9 +136,19 @@ class DisplayRecyclerView : RecyclerView,
 
     class DisplayItemHolder(itemView: View) : ViewHolder(itemView) {
 
+        private val image: ImageView = itemView.findViewById(R.id.image)
+
         fun setBackground(bitmap: Bitmap) {
-            itemView.findViewById<ImageView>(R.id.image).setImageBitmap(bitmap)
-            itemView.findViewById<ImageView>(R.id.image).setBackgroundColor(Color.BLACK)
+            image.apply {
+                addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+                    bitmap.reconfigure(
+                        right - left,
+                        bottom - top,
+                        Bitmap.Config.ARGB_8888
+                    )
+                    setImageBitmap(bitmap)
+                }
+            }
         }
     }
 }

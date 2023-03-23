@@ -111,9 +111,9 @@ class StaggerPager : ViewPager, CardFunction.StaggerCardFunction {
 
                 this.setPadding(
                     (paddingStart * position / count).toInt(),
-                    (paddingVertical * (count - position) / count).toInt(),
+                    (paddingVertical * (count - position - 1) / count).toInt(),
                     0,
-                    (paddingVertical * (count - position) / count).toInt()
+                    (paddingVertical * (count - position - 1) / count).toInt()
                 )
 
                 val imageView = this.findViewById<ImageView>(R.id.image)
