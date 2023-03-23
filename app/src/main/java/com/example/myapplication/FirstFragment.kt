@@ -44,7 +44,7 @@ class FirstFragment : Fragment() {
                 }
                 launch {
                     binding.pictureDisplay.getStateFlow().collect {
-                        Log.d("NEU", "pictureDisplay state: $it")
+                        Log.d("RRR", "pictureDisplay state: $it")
 
                         when (it) {
                             is CardState.Forward -> {
@@ -79,6 +79,6 @@ class FirstFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        Log.d("NEU", "onViewCreated: ")
+        Log.d("RRR", "onViewCreated: ")
     }
 }

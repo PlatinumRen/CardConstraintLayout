@@ -40,7 +40,7 @@ class StaggerPager : ViewPager, CardFunction.StaggerCardFunction {
     }
 
     override fun addPicture(picture: Bitmap) {
-        Log.d("NEU", "addPicture: $picture")
+        Log.d("RRR", "addPicture: $picture")
         if (staggerPictures.add(picture)) {
             visibility = VISIBLE
             updateItem()
@@ -49,7 +49,7 @@ class StaggerPager : ViewPager, CardFunction.StaggerCardFunction {
     }
 
     override fun removePicture(picture: Bitmap) {
-        Log.d("NEU", "removePicture: $picture")
+        Log.d("RRR", "removePicture: $picture")
         if (staggerPictures.remove(picture)) {
             updateItem()
         }
@@ -98,7 +98,7 @@ class StaggerPager : ViewPager, CardFunction.StaggerCardFunction {
         }
 
         override fun instantiateItem(container: ViewGroup, position: Int): Any {
-            Log.d("NEU", "instantiateItem position: $position")
+            Log.d("RRR", "instantiateItem position: $position")
             return LayoutInflater.from(container.context).inflate(
                 R.layout.stagger_pager_view_item, container, false
             ).apply {
@@ -145,7 +145,7 @@ class StaggerPager : ViewPager, CardFunction.StaggerCardFunction {
         }
 
         override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
-            Log.d("NEU", "destroyItem: $position")
+            Log.d("RRR", "destroyItem: $position")
             container.removeView(`object` as View)
         }
     }
