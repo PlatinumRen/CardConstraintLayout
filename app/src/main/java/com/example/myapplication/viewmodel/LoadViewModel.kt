@@ -18,7 +18,7 @@ class LoadViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            repeat(100) {
+            repeat(20) {
                 val picture = createBitmap(1280, 960)
                 when (it.mod(3)) {
                     0 -> picture.eraseColor(Color.RED)

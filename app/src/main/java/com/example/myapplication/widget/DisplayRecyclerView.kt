@@ -80,11 +80,10 @@ class DisplayRecyclerView : RecyclerView,
 
             lastLeftChild.layoutParams?.height = this.height / 3 * 2
             (lastLeftChild.layoutParams as? MarginLayoutParams)?.topMargin = this.height / 6
+            lastLeftChild.findViewById<ImageView>(R.id.image).layoutParams.height = this.height
+            lastLeftChild.findViewById<RecyclerView>(R.id.content).visibility = GONE
 
             lastLeftChild = leftChild.also {
-                it.findViewById<ImageView>(R.id.image).layoutParams.height = this.height
-                it.findViewById<RecyclerView>(R.id.content).visibility = GONE
-
                 it.layoutParams.height = this.height
                 (it.layoutParams as MarginLayoutParams).topMargin = 0
             }
