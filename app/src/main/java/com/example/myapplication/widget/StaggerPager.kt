@@ -11,88 +11,70 @@ import android.widget.ImageView
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.example.myapplication.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
-class StaggerPager : ViewPager {
+sealed class StaggerShared {
+    data class Open(val position: Int) : StaggerShared()
+
+    data class Close(val position: Int): StaggerShared()
+}
+
+class StaggerPager : ViewPager, CardFunction.StaggerCardFunction {
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
+
+    private val staggerPictures: ArrayList<Bitmap> = arrayListOf()
+
+    private val _staggerShare: MutableSharedFlow<StaggerShared> = MutableSharedFlow()
+
+    private var updateShareJob: Job? = null
 
     override fun onFinishInflate() {
         super.onFinishInflate()
 
-        adapter = StaggerItemAdapter()
-        offscreenPageLimit = ITEM_COUNT
         setPageTransformer(false, StaggerTransformer())
     }
 
-    inner class StaggerItemAdapter : PagerAdapter() {
-        private val allPictures: ArrayList<Bitmap> = arrayListOf()
-        private val staggerPictures: ArrayList<Bitmap> = arrayListOf()
-
-        override fun getCount(): Int {
-            return ITEM_COUNT
+    override fun addPicture(picture: Bitmap) {
+        Log.d("NEU", "addPicture: $picture")
+        if (staggerPictures.add(picture)) {
+            visibility = VISIBLE
+            updateItem()
+            currentItem = staggerPictures.size - 1
         }
+    }
 
-        override fun isViewFromObject(view: View, `object`: Any): Boolean {
-            return view == `object`
+    override fun removePicture(picture: Bitmap) {
+        Log.d("NEU", "removePicture: $picture")
+        if (staggerPictures.remove(picture)) {
+            updateItem()
         }
-
-        override fun instantiateItem(container: ViewGroup, position: Int): Any {
-            Log.d("NEU", "instantiateItem: $position")
-            return LayoutInflater.from(container.context).inflate(
-                R.layout.stagger_pager_view_item, container, false
-            ).apply {
-                val paddingStart = context.resources.getDimension(R.dimen.card_padding_start)
-                val paddingVertical = context.resources.getDimension(R.dimen.card_padding_vertical)
-
-
-                this.layoutParams.width = container.width
-                this.layoutParams.height = container.height
-                this.setPadding(
-                    (paddingStart * position / ITEM_COUNT).toInt(),
-                    (paddingVertical * (3 - position) / ITEM_COUNT).toInt(),
-                    0,
-                    (paddingVertical * (3 - position) / ITEM_COUNT).toInt()
-                )
-
-                val imageView = this.findViewById<ImageView>(R.id.image)
-                if (staggerPictures.size != 0) {
-                    imageView.setImageBitmap(staggerPictures[position])
-                }
-            }.also {
-                container.addView(it)
-            }
+        if (staggerPictures.size == 0) {
+            visibility = GONE
+        } else {
+            currentItem = staggerPictures.size - 1
         }
+    }
 
-        override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
-            Log.d("NEU", "destroyItem: $position")
-            container.removeView(`object` as View)
-        }
+    override fun getSharedFlow(): SharedFlow<StaggerShared> {
+        // Noop.
+        return _staggerShare.asSharedFlow()
+    }
 
-        override fun getItemPosition(`object`: Any): Int {
-            return super.getItemPosition(`object`)
-        }
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
 
-        fun updateItem(pictures: ArrayList<Bitmap>) {
-            this.allPictures.clear()
-            this.allPictures.addAll(pictures)
-        }
+        updateShareJob?.cancel()
+        updateShareJob = null
+    }
 
-        fun setPosition(position: Int) {
-            Log.d("NEU", "setPosition: $position")
-            val new = allPictures[position]
-            if (staggerPictures.contains(new)) {
-                staggerPictures.remove(allPictures[position + 1])
-                if (position >= ITEM_COUNT) {
-                    staggerPictures.add(allPictures[position - ITEM_COUNT])
-                }
-            } else {
-                staggerPictures.add(allPictures[position])
-                if (position >= ITEM_COUNT) {
-                    staggerPictures.remove(allPictures[position - ITEM_COUNT])
-                }
-            }
-            notifyDataSetChanged()
-        }
+    private fun updateItem() {
+        adapter = StaggerItemAdapter(staggerPictures)
+        offscreenPageLimit = staggerPictures.size
     }
 
     class StaggerTransformer : PageTransformer {
@@ -103,7 +85,68 @@ class StaggerPager : ViewPager {
         }
     }
 
-    companion object {
-        private const val ITEM_COUNT = 4
+    inner class StaggerItemAdapter(
+        private val staggerPictures: ArrayList<Bitmap>
+    ) : PagerAdapter() {
+
+        override fun getCount(): Int {
+            return staggerPictures.size
+        }
+
+        override fun isViewFromObject(view: View, `object`: Any): Boolean {
+            return view == `object`
+        }
+
+        override fun instantiateItem(container: ViewGroup, position: Int): Any {
+            Log.d("NEU", "instantiateItem position: $position")
+            return LayoutInflater.from(container.context).inflate(
+                R.layout.stagger_pager_view_item, container, false
+            ).apply {
+                val paddingStart = context.resources.getDimension(R.dimen.card_padding_start)
+                val paddingVertical = context.resources.getDimension(R.dimen.card_padding_vertical)
+
+
+                this.layoutParams.width = container.width
+                this.layoutParams.height = container.height
+
+                this.setPadding(
+                    (paddingStart * position / count).toInt(),
+                    (paddingVertical * (count - position) / count).toInt(),
+                    0,
+                    (paddingVertical * (count - position) / count).toInt()
+                )
+
+                val imageView = this.findViewById<ImageView>(R.id.image)
+                imageView.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+                    val bitmap = staggerPictures[position]
+                    bitmap.reconfigure(
+                        right - left,
+                        bottom - top,
+                        Bitmap.Config.ARGB_8888
+                    )
+                    imageView.setImageBitmap(bitmap)
+                }
+            }.also {
+                if (position == staggerPictures.size - 1) {
+                    it.setOnClickListener {
+                        updateShareJob = CoroutineScope(Dispatchers.Main).launch {
+                            _staggerShare.emit(StaggerShared.Close(position))
+                        }
+                    }
+                    it.setOnLongClickListener {
+                        updateShareJob = CoroutineScope(Dispatchers.Main).launch {
+                            _staggerShare.emit(StaggerShared.Open(position))
+                        }
+                        true
+                    }
+                }
+                container.addView(it)
+            }
+        }
+
+        override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
+            Log.d("NEU", "destroyItem: $position")
+            container.removeView(`object` as View)
+        }
     }
 }

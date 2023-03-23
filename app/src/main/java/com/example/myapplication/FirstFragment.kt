@@ -6,15 +6,14 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.constraintlayout.widget.ConstraintSet
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.myapplication.databinding.FragmentFirstBinding
 import com.example.myapplication.viewmodel.LoadViewModel
-import com.example.myapplication.widget.DisplayRecyclerView
-import com.example.myapplication.widget.StaggerPager
+import com.example.myapplication.widget.CardState
+import com.example.myapplication.widget.StaggerShared
 import kotlinx.coroutines.launch
 
 /**
@@ -38,56 +37,37 @@ class FirstFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 launch {
                     loadViewModel.pictures.collect {
-                        val displayAdapter = binding.pictureDisplay.adapter
-                        (displayAdapter as DisplayRecyclerView.DisplayItemAdapter).updateItem(
-                            it.toArrayList()
-                        )
-                        val staggerAdapter = binding.pictureStagger.adapter
-                        (staggerAdapter as StaggerPager.StaggerItemAdapter).updateItem(
-                            it.toArrayList()
-                        )
+                        binding.pictureDisplay.apply {
+                            updateItem(it.toArrayList())
+                        }
                     }
                 }
                 launch {
-                    binding.pictureDisplay.callback = object : DisplayRecyclerView.CardCallback {
-                        override fun forward(position: Int) {
-                            Log.d("NEU", "forward: ")
+                    binding.pictureDisplay.getStateFlow().collect {
+                        Log.d("NEU", "pictureDisplay state: $it")
 
-                            if (position == 1) {
-                                val set = ConstraintSet()
-                                set.clone(binding.cardConstraint)
-                                set.connect(
-                                    binding.pictureDisplay.id,
-                                    ConstraintSet.START,
-                                    binding.cardConstraint.id,
-                                    ConstraintSet.START,
-                                    binding.root.resources.getDimension(R.dimen.display_view_with_stack_margin_start).toInt()
-                                )
-                                set.applyTo(binding.cardConstraint)
+                        when (it) {
+                            is CardState.Forward -> {
+                                binding.pictureStagger.addPicture(it.bitmap)
                             }
-
-                            val staggerAdapter = binding.pictureStagger.adapter
-                            (staggerAdapter as StaggerPager.StaggerItemAdapter).setPosition(position)
+                            is CardState.Backward -> {
+                                binding.pictureStagger.removePicture(it.bitmap)
+                            }
+                            else -> {
+                                // Noop.
+                            }
                         }
-
-                        override fun backward(position: Int) {
-                            Log.d("NEU", "backward: ")
-
-                            if (position == 0) {
-                                val set = ConstraintSet()
-                                set.clone(binding.cardConstraint)
-                                set.connect(
-                                    binding.pictureDisplay.id,
-                                    ConstraintSet.START,
-                                    binding.cardConstraint.id,
-                                    ConstraintSet.START,
-                                    binding.root.resources.getDimension(R.dimen.display_view_without_stack_margin_start).toInt()
-                                )
-                                set.applyTo(binding.cardConstraint)
+                    }
+                }
+                launch {
+                    binding.pictureStagger.getSharedFlow().collect {
+                        when (it) {
+                            is StaggerShared.Open -> {
+                                binding.pictureDisplay.adjustLayout(it.position + 1, true)
                             }
-
-                            val staggerAdapter = binding.pictureStagger.adapter
-                            (staggerAdapter as StaggerPager.StaggerItemAdapter).setPosition(position)
+                            is StaggerShared.Close -> {
+                                binding.pictureDisplay.adjustLayout(it.position + 1, false)
+                            }
                         }
                     }
                 }
