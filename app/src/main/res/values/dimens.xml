@@ -1,0 +1,8 @@
+<resources>
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="card_padding_start">30dp</dimen>
+    <dimen name="card_padding_vertical">30dp</dimen>
+
+    <dimen name="display_view_without_stack_margin_start">100dp</dimen>
+    <dimen name="display_view_with_stack_margin_start">180dp</dimen>
+</resources>
