@@ -34,7 +34,7 @@ class FirstFragment : Fragment() {
             loadVm = loadViewModel
         }
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
                 launch {
                     loadViewModel.pictures.collect {
                         binding.pictureDisplay.apply {
